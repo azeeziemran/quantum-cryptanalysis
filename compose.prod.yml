@@ -1,0 +1,60 @@
+services:
+  backend:
+    image: ${IMAGE_BASE:?Set IMAGE_BASE in .env}-backend:${IMAGE_TAG:?Set IMAGE_TAG in .env}
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?Set ALLOWED_ORIGINS in .env}
+    pull_policy: always
+    init: true
+    cap_add:
+      - NET_RAW
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7070/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ${IMAGE_BASE:?Set IMAGE_BASE in .env}-frontend:${IMAGE_TAG:?Set IMAGE_TAG in .env}
+    pull_policy: always
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document=/dev/null
+        - http://127.0.0.1:5173/
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.0
+    command: tunnel --protocol http2 --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?Set CLOUDFLARED_TOKEN in .env}
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"

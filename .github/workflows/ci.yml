@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Check installed dependencies
+        run: python -m pip check
+
+      - name: Compile backend
+        run: python -m py_compile backend/app.py
+
+  containers:
+    runs-on: ubuntu-latest
+    needs:
+      - frontend
+      - backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate local Compose configuration
+        env:
+          CLOUDFLARED_TOKEN: ci-placeholder
+        run: docker compose config --quiet
+
+      - name: Validate production Compose configuration
+        env:
+          CLOUDFLARED_TOKEN: ci-placeholder
+          ALLOWED_ORIGINS: https://chat.example.com
+          IMAGE_BASE: ghcr.io/example/quantum-chat
+          IMAGE_TAG: ci
+        run: docker compose -f compose.prod.yml config --quiet
+
+      - name: Build backend image
+        run: docker build --tag quantum-chat-backend:ci backend
+
+      - name: Build frontend image
+        run: docker build --tag quantum-chat-frontend:ci frontend

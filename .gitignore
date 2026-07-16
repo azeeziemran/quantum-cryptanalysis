@@ -1,0 +1,59 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+.quantum-venv/
+
+# Python caches and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipython/
+.matplotlib-cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node and frontend build artifacts
+node_modules/
+dist/
+.vite/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Packet captures generated during demonstrations
+*.pcap
+*.pcapng
+captures/
+for_capture
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Local helper scripts/tools not needed for deployment
+tools/
+
+# Editors and IDEs
+.idea/
+.vscode/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
